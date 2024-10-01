@@ -15,9 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
 [package]
-name = "shenyu-client-rust"
+name = "examples"
 version = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -28,7 +27,16 @@ description = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
 keywords = ["shenyu"]
-readme = "../README.md"
+
+[[bin]]
+name = "axum_example"
+path = "src/axum_example.rs"
+required-features = ["axum"]
+
+[[bin]]
+name = "actix_web_example"
+path = "src/actix_web_example.rs"
+required-features = ["actix-web"]
 
 [features]
 default = []
@@ -36,29 +44,26 @@ axum = ["dep:axum"]
 actix-web = ["dep:actix-web"]
 
 [dependencies]
-cfg-if = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true }
 serde_json = { workspace = true }
-ureq = { workspace = true, features = ["json"] }
-tower-service = "0.3.3"
-serde_yaml = "0.9.34"
-dashmap = "6.0.1"
+shenyu-client-rust = { path = "../shenyu-client-rust", version = "0.1.1", features = ["actix-web", "axum"] }
 
 # http micro services need.
 axum = { version = "0.7.5", optional = true }
 actix-web = { version = "4.9.0", optional = true }
+tokio = "1.39.3"
 
-# grpc micro services need.
-tonic = { version = "0.12.1" }
-prost = { version = "0.13.1" }
-tokio = { version = "1.38.0", features = ["full"] }
-local-ip-address = "0.4.9"
+tracing = "0.1"
+tracing-subscriber = "0.3"
 
-# tonic-reflectionIt is mainly used for grpcurl tools to view grpc microservice interface protocol definitions
-# note: Must be the same as the tonic version
-tonic-reflection = { version = "0.12.1" }
-quote = "1.0.36"
-tracing = "0.1.40"
-
-[dev-dependencies]
-mockall = "0.10.2"
+# CI need.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_System_Kernel",
+    "Win32_System_Threading",
+    "Win32_System_SystemInformation",
+    "Win32_System_Diagnostics_Debug",
+] }

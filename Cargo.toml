@@ -32,8 +32,8 @@ readme = "README.md"
 [workspace]
 resolver = "2"
 members = [
-    "examples/*",
     "shenyu-client-rust",
+    "examples"
 ]
 
 [workspace.dependencies]
