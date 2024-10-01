@@ -30,7 +30,9 @@ use axum::{routing::get, Router};
 use shenyu_client_rust::axum_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
 use shenyu_client_rust::{core::ShenyuClient, IRouter};
-use tokio::signal;
+
+mod ci;
+use crate::ci::_CI_CTRL_C;
 
 async fn health_handler() -> &'static str {
     "OK"
@@ -42,35 +44,44 @@ async fn create_user_handler() -> &'static str {
 
 #[tokio::main]
 async fn main() {
+    // Spawn a thread to listen for Ctrl-C events and shutdown the server
+    std::thread::spawn(_CI_CTRL_C);
+    // Initialize tracing
+    tracing_subscriber::fmt::init();
+
     let app = ShenYuRouter::<()>::new("shenyu_client_app")
         .nest("/api", ShenYuRouter::new("api"))
-        .route("/health", get(health_handler))
-        .route("/users", post(create_user_handler));
+        .route("/health", "get", get(health_handler))
+        .route("/users", "post", post(create_user_handler));
     let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
-    let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 3000)
-        .await
-        .unwrap();
+    let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 3000).unwrap();
 
     let axum_app: Router = app.into();
-    client.register().await.expect("TODO: panic message");
+    client.register().expect("TODO: panic message");
 
     // Start Axum server
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, axum_app)
         .with_graceful_shutdown(async move {
-            signal::ctrl_c().await.expect("failed to listen for event");
-            client.offline_register().await;
+            tokio::signal::ctrl_c()
+                .await
+                .expect("failed to listen for event");
+            client.offline_register();
         })
         .await
         .unwrap();
 }
+
 ```
 ```rust
 #![cfg(feature = "actix-web")]
 use actix_web::{middleware, App, HttpServer, Responder};
 use shenyu_client_rust::actix_web_impl::ShenYuRouter;
 use shenyu_client_rust::config::ShenYuConfig;
-use shenyu_client_rust::{core::ShenyuClient, register_once, shenyu_router, IRouter};
+use shenyu_client_rust::{register_once, shenyu_router};
+
+mod ci;
+use crate::ci::_CI_CTRL_C;
 
 async fn health_handler() -> impl Responder {
     "OK"
@@ -86,6 +97,11 @@ async fn index() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Spawn a thread to listen for Ctrl-C events and shutdown the server
+    std::thread::spawn(_CI_CTRL_C);
+    // Initialize tracing
+    tracing_subscriber::fmt::init();
+
     HttpServer::new(move || {
         let mut router = ShenYuRouter::new("shenyu_client_app");
         let mut app = App::new().wrap(middleware::Logger::default());
