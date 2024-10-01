@@ -1,10 +1,10 @@
-# Apache ShenYu-Client-Rust
+# Apache ShenYu-Client-Rust ShenYu-Rust客户端
 
-The Apache `ShenYu` Rust Client SDK is a Rust library for interacting with the Apache `ShenYu` gateway. This SDK allows you to easily integrate your Rust applications with the `ShenYu` gateway, providing a seamless way to manage and route your API requests.
+Apache ShenYu Rust客户端SDK是一个用于与Apache ShenYu网关交互的Rust库。此SDK允许您轻松地将Rust应用程序与ShenYu网关集成，提供一种无缝的方式来管理和路由API请求。
 
-## Installation
+## 安装
 
-To use the Apache `ShenYu` Rust Client SDK in your project, add the following dependencies to your `Cargo.toml` file:
+要在项目中使用Apache ShenYu Rust客户端SDK，请在`Cargo.toml`文件中添加以下依赖项：
 
 ```toml
 [dependencies]
@@ -16,11 +16,11 @@ tokio = "1.39.3"
 shenyu-client-rust = {version = "0.1.1", features = ["actix-web", "axum"] }
 ```
 
-## Usage
+## 使用
 
-Below is an example of how to create an Axum service using `ShenYuRouter` and integrate it with the `ShenYu` Gateway.
+下面是一个如何使用`ShenYuRouter`创建Axum服务并将其与ShenYu网关集成的示例。
 
-### Example
+### 示例
 
 ```rust
 
@@ -64,7 +64,9 @@ async fn main() {
         .await
         .unwrap();
 }
+
 ```
+
 ```rust
 #![cfg(feature = "actix-web")]
 use actix_web::{middleware, App, HttpServer, Responder};
@@ -109,8 +111,8 @@ async fn main() -> std::io::Result<()> {
 
 ```
 
-This example demonstrates how to set up a basic Axum service using `ShenYuRouter` and register it with the `ShenYu` Gateway. `health_handler` and `create_user_handler` are simple asynchronous functions that handle HTTP requests.
+此示例演示了如何使用`ShenYuRouter`设置基本的Axum服务并将其注册到ShenYu网关。`health_handler`和`create_user_handler`是处理HTTP请求的简单异步函数。
 
-## License
+## 许可证
 
-This project is licensed under the Apache License 2.0. For more details, see the [LICENSE](LICENSE) file.
+此项目根据Apache许可证2.0版获得许可。有关更多详细信息，请参阅[LICENSE](LICENSE)文件。

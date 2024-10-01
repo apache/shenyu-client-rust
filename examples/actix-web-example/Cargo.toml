@@ -1,0 +1,15 @@
+[package]
+name = "actix-web-example"
+version.workspace = true
+edition.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+categories.workspace = true
+description.workspace = true
+repository.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme.workspace = true
+
+[dependencies]
