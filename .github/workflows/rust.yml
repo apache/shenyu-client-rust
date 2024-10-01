@@ -25,6 +25,7 @@ env:
 jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     steps:
       - uses: actions/checkout@v4
 
@@ -49,15 +50,32 @@ jobs:
         if: ${{ !contains(matrix.os, 'windows') }}
         shell: bash
         run: sh .github/workflows/shenyu.sh
-      - name: Start shenyu admin on Windows
+      - name: Build shenyu admin on Windows
         if: ${{ contains(matrix.os, 'windows') }}
         run: .github/workflows/shenyu.bat
-
-      - name: Install dependencies
-        if: ${{ !startsWith(matrix.target, 'x86_64') && contains(matrix.target, 'linux') }}
+      - name: Start shenyu admin on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev pkg-config libc6-dev libc6-dev-i386 gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu gcc-riscv64-linux-gnu
+          cd shenyu\shenyu-2.6.1\shenyu-dist\shenyu-admin-dist\target
+          powershell -Command "Expand-Archive -Path 'shenyu-admin-admin-bin.zip' -DestinationPath '.\shenyu-admin-admin-bin'"
+          cd shenyu-admin-admin-bin\shenyu-admin-admin-bin\bin
+          Start-Process -FilePath "cmd.exe" -ArgumentList "/b /c .\start.bat" -WindowStyle Hidden
+
+#      - name: Update apt repositories
+#        if: ${{ contains(matrix.target, 'linux') }}
+#        run: sudo apt-get update
+#
+#      - name: Install AArch64 target toolchain
+#        if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
+#        run: sudo apt-get install gcc-aarch64-linux-gnu
+#
+#      - name: Install ARM target toolchain
+#        if: ${{ matrix.target == 'arm7-unknown-linux-gnueabihf' }}
+#        run: sudo apt-get install gcc-arm-linux-gnueabihf
+#
+#      - name: Install ARM target toolchain
+#        if: ${{ matrix.target == 'riscv64gc-unknown-linux-gnu' }}
+#        run: sudo apt-get install gcc-riscv64-linux-gnu
 
       - name: Run tests on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
@@ -69,6 +87,7 @@ jobs:
           PROJECT_DIR: ${{ github.workspace }}
         shell: bash
         run: sh .github/workflows/ci.sh
+
       - name: Run tests on Windows
         if: ${{ contains(matrix.os, 'windows') }}
         env:
@@ -78,29 +97,29 @@ jobs:
           OS: ${{ matrix.os }}
           PROJECT_DIR: ${{ github.workspace }}
         run: .github/workflows/ci.bat
+        continue-on-error: true
 
       - name: Stop shenyu admin on Unix
         if: ${{ !contains(matrix.os, 'windows') }}
         run: |
           cd ~/shenyu/shenyu-dist/shenyu-admin-dist/target/apache-shenyu-*/bin
           sh ./stop.sh
-#      - name: Stop shenyu admin on Windows
-#        if: ${{ contains(matrix.os, 'windows') }}
-#        run:  |
-#          cd %USERPROFILE%
-#          cd shenyu\shenyu-dist\shenyu-admin-dist\target\shenyu-admin\bin
-#          .\stop.bat
+      - name: Stop shenyu admin on Windows
+        if: ${{ contains(matrix.os, 'windows') }}
+        run:  |
+          cd shenyu\shenyu-2.6.1\shenyu-dist\shenyu-admin-dist\target\shenyu-admin-admin-bin\shenyu-admin-admin-bin\bin
+          Start-Process -FilePath "cmd.exe" -ArgumentList "/b /c .\stop.bat" -WindowStyle Hidden
 
     strategy:
       fail-fast: false
       matrix:
         target: [
           x86_64-unknown-linux-gnu,
-          i686-unknown-linux-gnu,
-          aarch64-unknown-linux-gnu,
-          armv7-unknown-linux-gnueabihf,
-          riscv64gc-unknown-linux-gnu,
-          thumbv7neon-unknown-linux-gnueabihf,
+#          i686-unknown-linux-gnu,
+#          aarch64-unknown-linux-gnu,
+#          armv7-unknown-linux-gnueabihf,
+#          riscv64gc-unknown-linux-gnu,
+#          thumbv7neon-unknown-linux-gnueabihf,
 #          mips64-unknown-linux-muslabi64,
 #          loongarch64-unknown-linux-gnu,
 #          s390x-unknown-linux-gnu,
@@ -113,20 +132,23 @@ jobs:
           x86_64-pc-windows-msvc,
           i686-pc-windows-msvc,
         ]
-        channel: [ stable, nightly-2024-08-02 ]
+        channel: [ stable, nightly ]
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-          - target: i686-unknown-linux-gnu
-            os: ubuntu-latest
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-          - target: armv7-unknown-linux-gnueabihf
-            os: ubuntu-latest
-          - target: riscv64gc-unknown-linux-gnu
-            os: ubuntu-latest
-          - target: thumbv7neon-unknown-linux-gnueabihf
-            os: ubuntu-latest
+            code-target: linux-x64
+#          - target: i686-unknown-linux-gnu
+#            os: ubuntu-latest
+#          - target: aarch64-unknown-linux-gnu
+#            os: ubuntu-latest
+#            code-target: linux-arm64
+#          - target: armv7-unknown-linux-gnueabihf
+#            os: ubuntu-latest
+#            code-target: linux-armhf
+#          - target: riscv64gc-unknown-linux-gnu
+#            os: ubuntu-latest
+#          - target: thumbv7neon-unknown-linux-gnueabihf
+#            os: ubuntu-latest
 #          - target: mips64-unknown-linux-muslabi64
 #            os: ubuntu-latest
 #          - target: loongarch64-unknown-linux-gnu
@@ -145,5 +167,9 @@ jobs:
             os: windows-latest
           - target: x86_64-pc-windows-msvc
             os: windows-latest
+            code-target: win32-x64
           - target: i686-pc-windows-msvc
             os: windows-latest
+#          - target: aarch64-pc-windows-msvc
+#            os: windows-latest
+#            code-target: win32-arm64

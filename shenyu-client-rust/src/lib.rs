@@ -268,12 +268,17 @@ pub mod actix_web_impl {
     macro_rules! register_once {
         ($config:expr, $router:expr, $port:literal) => {
             use std::sync::OnceLock;
+            use $crate::IRouter;
 
             static ONCE: OnceLock<()> = OnceLock::new();
             ONCE.get_or_init(|| {
                 let client = {
-                    let res =
-                        ShenyuClient::from($config, $router.app_name(), $router.uri_infos(), $port);
+                    let res = $crate::core::ShenyuClient::from(
+                        $config,
+                        $router.app_name(),
+                        $router.uri_infos(),
+                        $port,
+                    );
                     let client = res.unwrap();
                     client
                 };

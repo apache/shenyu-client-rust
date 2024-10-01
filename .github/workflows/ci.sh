@@ -21,5 +21,5 @@ export RUST_BACKTRACE=1
 "${CARGO}" test --target "${TARGET}" --all-features
 "${CARGO}" test --target "${TARGET}" --all-features --release
 
-timeout 10s "${CARGO}" run --package examples --all-features --bin axum_example || true
-timeout 10s "${CARGO}" run --package examples --all-features --bin actix_web_example || true
+"${CARGO}" run --package examples --all-features --bin axum_example || true
+"${CARGO}" run --package examples --all-features --bin actix_web_example || true
