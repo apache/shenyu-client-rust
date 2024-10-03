@@ -21,11 +21,13 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 
+#[allow(missing_docs)]
 #[derive(Debug, Deserialize)]
 pub struct EnvConfig {
     pub(crate) shenyu: ShenYuConfig,
 }
 
+#[allow(missing_docs)]
 #[derive(Debug, Deserialize)]
 pub struct ShenYuConfig {
     pub register: RegisterConfig,
@@ -34,17 +36,19 @@ pub struct ShenYuConfig {
 }
 
 impl ShenYuConfig {
+    /// Load configuration from a YAML file.
     pub fn from_yaml_file(file_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let current_dir = std::env::current_dir().unwrap();
 
         let mut file = File::open(current_dir.join(file_path))?;
         let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
+        _ = file.read_to_string(&mut contents)?;
         let config: EnvConfig = serde_yaml::from_str(&contents)?;
         Ok(config.shenyu)
     }
 }
 
+#[allow(missing_docs)]
 #[derive(Debug, Deserialize)]
 pub struct RegisterConfig {
     pub register_type: String,
@@ -52,6 +56,7 @@ pub struct RegisterConfig {
     pub props: HashMap<String, String>,
 }
 
+#[allow(missing_docs)]
 #[derive(Debug, Deserialize)]
 pub struct UriConfig {
     pub app_name: String,
@@ -62,6 +67,7 @@ pub struct UriConfig {
     pub rpc_type: String,
 }
 
+#[allow(missing_docs)]
 #[derive(Debug, Deserialize)]
 pub struct DiscoveryConfig {
     pub protocol: String,

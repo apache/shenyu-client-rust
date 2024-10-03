@@ -25,12 +25,22 @@ use std::net::IpAddr;
 use tracing::{error, info, warn};
 use ureq::OrAnyStatus;
 
+/// Shenyu admin http interface path.
 pub const REGISTER_META_DATA_SUFFIX: &str = "/shenyu-client/register-metadata";
+
+/// Shenyu admin http interface path.
 pub const REGISTER_URI_SUFFIX: &str = "/shenyu-client/register-uri";
+
+/// Shenyu admin http interface path.
 pub const REGISTER_DISCOVERY_CONFIG_SUFFIX: &str = "/shenyu-client/register-discoveryConfig";
+
+/// Shenyu admin http interface path.
 pub const REGISTER_OFFLINE_SUFFIX: &str = "/shenyu-client/offline";
+
+/// Shenyu admin http interface path.
 pub const PLATFORM_LOGIN_SUFFIX: &str = "/platform/login";
 
+/// The shenyu client.
 #[derive(Debug)]
 #[warn(dead_code)]
 pub struct ShenyuClient {
@@ -49,21 +59,22 @@ pub struct ShenyuClient {
 }
 
 impl ShenyuClient {
+    /// Register to shenyu admin.
     pub fn register(&self) -> Result<(), Error> {
         if let Ok(token) = self.get_register_token() {
-            self.headers
+            _ = self
+                .headers
                 .insert("X-Access-Token".to_string(), token.to_string());
         } else {
             return Err(Error::new(ErrorKind::Other, "Can't get register token"));
         }
-        self.register_all_metadata(true)
-            .expect("Failed to register metadata");
-        self.register_uri().expect("Failed to register URI");
-        self.register_discovery_config()
-            .expect("Failed to register discovery config");
+        self.register_all_metadata(true);
+        self.register_uri();
+        self.register_discovery_config();
         Ok(())
     }
 
+    /// Create a new `ShenyuClient`.
     pub fn new(
         config: ShenYuConfig,
         app_name: &str,
@@ -71,7 +82,7 @@ impl ShenyuClient {
         port: u16,
     ) -> Result<Self, String> {
         let headers = DashMap::new();
-        headers.insert(
+        _ = headers.insert(
             "Content-Type".to_string(),
             "application/json;charset=UTF-8".to_string(),
         );
@@ -101,35 +112,39 @@ impl ShenyuClient {
             .register
             .servers
             .split(',')
-            .map(|s| s.to_string())
+            .map(ToString::to_string)
             .collect();
+        if self.gateway_base_urls.is_empty() {
+            return Err(String::from("shenyu.register.servers is empty"));
+        }
 
         self.register_meta_data_path_list = self
             .gateway_base_urls
             .iter()
-            .map(|url| format!("{}{}", url, REGISTER_META_DATA_SUFFIX))
+            .map(|url| format!("{url}{REGISTER_META_DATA_SUFFIX}"))
             .collect();
         self.register_uri_list = self
             .gateway_base_urls
             .iter()
-            .map(|url| format!("{}{}", url, REGISTER_URI_SUFFIX))
+            .map(|url| format!("{url}{REGISTER_URI_SUFFIX}"))
             .collect();
         self.register_token_servers = self
             .gateway_base_urls
             .iter()
-            .map(|url| format!("{}{}", url, PLATFORM_LOGIN_SUFFIX))
+            .map(|url| format!("{url}{PLATFORM_LOGIN_SUFFIX}"))
             .collect();
         self.register_discover_config_servers = self
             .gateway_base_urls
             .iter()
-            .map(|url| format!("{}{}", url, REGISTER_DISCOVERY_CONFIG_SUFFIX))
+            .map(|url| format!("{url}{REGISTER_DISCOVERY_CONFIG_SUFFIX}"))
             .collect();
         self.register_offline_servers = self
             .gateway_base_urls
             .iter()
-            .map(|url| format!("{}{}", url, REGISTER_OFFLINE_SUFFIX))
+            .map(|url| format!("{url}{REGISTER_OFFLINE_SUFFIX}"))
             .collect();
 
+        #[allow(unused_assignments)]
         let mut host = None;
         #[cfg(not(target_os = "macos"))]
         {
@@ -148,7 +163,7 @@ impl ShenyuClient {
                 }
                 host = match ipaddr {
                     IpAddr::V4(ipv4) => Some(IpAddr::from(ipv4)),
-                    _ => continue,
+                    IpAddr::V6(_) => continue,
                 };
             }
         }
@@ -166,7 +181,9 @@ impl ShenyuClient {
         for r in &self.headers {
             builder = builder.set(r.key(), r.value());
         }
-        let res = builder.send_json(json_data).unwrap();
+        let res = builder.send_json(json_data).map_err(|e| {
+            Error::new(ErrorKind::Other, format!("request {url} failed, cause {e}"))
+        })?;
         let status_code = res.status();
         let msg = res.into_string()?;
 
@@ -208,7 +225,8 @@ impl ShenyuClient {
         result
     }
 
-    pub fn register_uri(&self) -> Result<bool, Error> {
+    /// Register uri.
+    pub fn register_uri(&self) {
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
@@ -226,40 +244,36 @@ impl ShenyuClient {
             "eventType": EventType::REGISTER.to_string(),
         });
 
+        // Broadcast to all shenyu admin.
         for url in &self.register_uri_list {
-            if self.request(url, &json_data)? {
+            if let Ok(true) = self.request(url, &json_data) {
                 info!(
                     "[SUCCESS], register uri success, register data: {:#?}",
                     json_data
                 );
-                return Ok(true);
+                continue;
             }
+            error!(
+                "[ERROR], register uri to {} failed, app_name: {}, host: {}, port: {}",
+                url,
+                app_name,
+                host.clone().unwrap(),
+                port
+            );
         }
-
-        error!(
-            "[ERROR], register uri failed, app_name: {}, host: {}, port: {}",
-            app_name,
-            host.clone().unwrap(),
-            port
-        );
-        Ok(false)
     }
 
-    pub fn register_all_metadata(&self, enabled: bool) -> Result<bool, Error> {
-        for x in self.uri_infos.iter() {
-            match self.register_metadata(
+    /// Register metadata.
+    pub fn register_all_metadata(&self, enabled: bool) {
+        for x in &self.uri_infos {
+            self.register_metadata(
                 false,
                 Some(&x.path),
                 Some(&x.method_name),
                 Some(&x.rule_name),
                 enabled,
-            ) {
-                Ok(true) => continue,
-                Ok(false) => return Ok(false),
-                Err(e) => return Err(e),
-            }
+            );
         }
-        Ok(true)
     }
 
     fn register_metadata(
@@ -269,12 +283,12 @@ impl ShenyuClient {
         method: Option<&str>,
         rule_name: Option<&str>,
         enabled: bool,
-    ) -> Result<bool, Error> {
+    ) {
         let context_path = &self.env.uri.context_path.clone();
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let path = if register_all {
-            format!("{}**", context_path)
+            format!("{context_path}**")
         } else {
             path.unwrap_or("").to_string()
         };
@@ -299,23 +313,22 @@ impl ShenyuClient {
         });
 
         for url in &self.register_meta_data_path_list {
-            if self.request(url, &json_data)? {
+            if let Ok(true) = self.request(url, &json_data) {
                 info!(
                     "[SUCCESS], register metadata success, register data: {:#?}",
                     json_data
                 );
-                return Ok(true);
+                continue;
             }
+            error!(
+                "[ERROR], register metadata to {} failed, app_name: {}, path: {}, contextPath: {}",
+                url, app_name, path, context_path
+            );
         }
-
-        error!(
-            "[ERROR], register metadata failed, app_name: {}, path: {}, contextPath: {}",
-            app_name, path, context_path
-        );
-        Ok(false)
     }
 
-    pub fn register_discovery_config(&self) -> Result<bool, Error> {
+    /// Register discovery config.
+    pub fn register_discovery_config(&self) {
         let discovery_type = &self.env.discovery.discovery_type.clone();
         let register_path = &self.env.discovery.register_path.clone();
         let server_lists = &self.env.discovery.server_lists.clone();
@@ -337,25 +350,23 @@ impl ShenyuClient {
             "pluginName": plugin_name,
         });
 
+        // Broadcast to all shenyu admin.
         for url in &self.register_discover_config_servers {
-            if self.request(url, &json_data)? {
+            if let Ok(true) = self.request(url, &json_data) {
                 info!(
                     "[SUCCESS], register discover config success, register data: {:#?}",
                     json_data
                 );
-                return Ok(true);
+                continue;
             }
+            error!(
+                "[ERROR], register discover config to {} failed, discovery_type: {}, host: {}, port: {}",
+                url, discovery_type, host.clone().unwrap(), port
+            );
         }
-
-        error!(
-            "[ERROR], register discover config failed, discovery_type: {}, host: {}, port: {}",
-            discovery_type,
-            host.clone().unwrap(),
-            port
-        );
-        Ok(false)
     }
 
+    /// Offline from shenyu.
     pub fn offline_register(&self) {
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
@@ -373,21 +384,22 @@ impl ShenyuClient {
             "eventType": EventType::REGISTER.to_string(),
         });
 
+        // Broadcast offline to all shenyu admin.
         for url in &self.register_offline_servers {
-            if self.request(url, &json_data).unwrap() {
+            if let Ok(true) = self.request(url, &json_data) {
                 info!(
                     "[SUCCESS], offline success, register data: {:#?}",
                     json_data
                 );
-                return;
+                continue;
             }
+            error!(
+                "[ERROR], offline from {} failed, app_name: {}, host: {}, port: {}",
+                url,
+                app_name,
+                host.clone().unwrap(),
+                port
+            );
         }
-
-        error!(
-            "[ERROR], register uri failed, app_name: {}, host: {}, port: {}",
-            app_name,
-            host.clone().unwrap(),
-            port
-        );
     }
 }

@@ -19,7 +19,8 @@
 pub static _CI_CTRL_C: fn() = || {
     // ctrl+c after 10 seconds, just for CI
     std::thread::sleep(std::time::Duration::from_secs(10));
-    let pid = std::process::id() as _;
+    let pid = std::process::id().try_into().expect("overflow");
+    #[allow(unused_results)]
     unsafe {
         #[cfg(unix)]
         libc::kill(pid, libc::SIGINT);

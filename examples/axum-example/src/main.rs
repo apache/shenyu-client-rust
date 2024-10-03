@@ -15,15 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#![cfg(feature = "axum")]
 use axum::routing::post;
 use axum::{routing::get, Router};
 use shenyu_client_rust::axum_impl::ShenYuRouter;
+use shenyu_client_rust::ci::_CI_CTRL_C;
 use shenyu_client_rust::config::ShenYuConfig;
-use shenyu_client_rust::{core::ShenyuClient, IRouter};
-
-mod ci;
-use crate::ci::_CI_CTRL_C;
+use shenyu_client_rust::core::ShenyuClient;
+use shenyu_client_rust::IRouter;
 
 async fn health_handler() -> &'static str {
     "OK"
@@ -42,10 +40,22 @@ async fn main() {
 
     let app = ShenYuRouter::<()>::new("shenyu_client_app")
         .nest("/api", ShenYuRouter::new("api"))
-        .route("/health", "get", get(health_handler))
-        .route("/users", "post", post(create_user_handler));
-    let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
-    let client = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 3000).unwrap();
+        .route(
+            "/health",
+            &format!("{}::{}", env!("CARGO_PKG_NAME"), stringify!(health_handler)),
+            get(health_handler),
+        )
+        .route(
+            "/users",
+            &format!(
+                "{}::{}",
+                env!("CARGO_PKG_NAME"),
+                stringify!(create_user_handler)
+            ),
+            post(create_user_handler),
+        );
+    let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
+    let client = ShenyuClient::new(config, app.app_name(), app.uri_infos(), 3000).unwrap();
 
     let axum_app: Router = app.into();
     client.register().expect("TODO: panic message");

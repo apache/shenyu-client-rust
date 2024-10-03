@@ -15,22 +15,86 @@
 // specific language governing permissions and limitations
 // under the License.
 
-//! Rust shenyu-client-rust sdk of Apache ShenYu.
+#![deny(
+    // The following are allowed by default lints according to
+    // https://doc.rust-lang.org/rustc/lints/listing/allowed-by-default.html
+    absolute_paths_not_starting_with_crate,
+    explicit_outlives_requirements,
+    macro_use_extern_crate,
+    redundant_lifetimes,
+    anonymous_parameters,
+    bare_trait_objects,
+    // elided_lifetimes_in_paths, // allow anonymous lifetime
+    missing_copy_implementations,
+    missing_debug_implementations,
+    missing_docs,
+    // single_use_lifetimes, // TODO: fix lifetime names only used once
+    // trivial_casts,
+    trivial_numeric_casts,
+    unreachable_pub,
+    // unsafe_code,
+    unstable_features,
+    // unused_crate_dependencies,
+    unused_lifetimes,
+    unused_macro_rules,
+    unused_extern_crates,
+    unused_import_braces,
+    unused_qualifications,
+    unused_results,
+    variant_size_differences,
+
+    warnings, // treat all wanings as errors
+
+    clippy::all,
+    // clippy::restriction,
+    clippy::pedantic,
+    // clippy::nursery, // It's still under development
+    clippy::cargo,
+)]
+#![allow(
+    // Some explicitly allowed Clippy lints, must have clear reason to allow
+    clippy::blanket_clippy_restriction_lints, // allow clippy::restriction
+    clippy::implicit_return, // actually omitting the return keyword is idiomatic Rust code
+    clippy::module_name_repetitions, // repeation of module name in a struct name is not big deal
+    clippy::multiple_crate_versions, // multi-version dependency crates is not able to fix
+    clippy::missing_errors_doc, // TODO: add error docs
+    clippy::missing_panics_doc, // TODO: add panic docs
+    clippy::panic_in_result_fn,
+    clippy::shadow_same, // Not too much bad
+    clippy::shadow_reuse, // Not too much bad
+    clippy::exhaustive_enums,
+    clippy::exhaustive_structs,
+    clippy::indexing_slicing,
+    clippy::separated_literal_suffix, // conflicts with clippy::unseparated_literal_suffix
+    clippy::single_char_lifetime_names, // TODO: change lifetime names
+)]
+#![doc = include_str!("../../README.md")]
 
 use crate::model::UriInfo;
 
+/// A mod for CI.
+pub mod ci;
+/// Config structs.
 pub mod config;
+/// Shenyu client core.
 pub mod core;
+/// Error handling.
 pub mod error;
+/// Macros.
 pub mod macros;
+/// Structs.
 pub mod model;
 
+#[allow(missing_docs)]
 pub trait IRouter {
+    /// Get app name.
     fn app_name(&self) -> &str;
 
+    /// Get uri infos.
     fn uri_infos(&self) -> &Vec<UriInfo>;
 }
 
+#[allow(missing_docs)]
 #[cfg(feature = "axum")]
 pub mod axum_impl {
     use super::model::UriInfo;
@@ -88,6 +152,7 @@ pub mod axum_impl {
     where
         S: Clone + Send + Sync + 'static,
     {
+        #[must_use]
         pub fn new(app_name: &str) -> Self {
             Self {
                 app_name: app_name.to_string(),
@@ -96,11 +161,13 @@ pub mod axum_impl {
             }
         }
 
+        #[must_use]
         pub fn uri_info(mut self, uri_info: UriInfo) -> Self {
             self.uri_infos.push(uri_info);
             self
         }
 
+        #[must_use]
         pub fn route(mut self, path: &str, method: &str, method_router: MethodRouter<S>) -> Self {
             self.inner = self.inner.route(path, method_router);
             self.uri_infos.push(UriInfo {
@@ -112,6 +179,7 @@ pub mod axum_impl {
             self
         }
 
+        #[must_use]
         pub fn route_service<T>(mut self, path: &str, method: &str, service: T) -> Self
         where
             T: Service<Request, Error = Infallible> + Clone + Send + 'static,
@@ -128,6 +196,7 @@ pub mod axum_impl {
             self
         }
 
+        #[must_use]
         #[track_caller]
         pub fn nest(mut self, path: &str, route: ShenYuRouter<S>) -> Self {
             self.inner = self.inner.nest(path, route.inner);
@@ -135,6 +204,7 @@ pub mod axum_impl {
             self
         }
 
+        #[must_use]
         #[track_caller]
         pub fn nest_service<T>(mut self, path: &str, method: &str, service: T) -> Self
         where
@@ -152,10 +222,12 @@ pub mod axum_impl {
             self
         }
 
+        #[must_use]
         pub fn uri_infos(&self) -> &Vec<UriInfo> {
             &self.uri_infos
         }
 
+        #[must_use]
         #[track_caller]
         pub fn merge<R>(mut self, other: ShenYuRouter<R>) -> Self
         where
@@ -189,22 +261,7 @@ pub mod axum_impl {
     }
 }
 
-impl ShenyuClient {
-    pub fn parse(path: &str, router: Box<dyn IRouter>, port: u16) -> Result<Self, String> {
-        let config = ShenYuConfig::from_yaml_file(path).unwrap();
-        Self::from(config, router.app_name(), router.uri_infos(), port)
-    }
-
-    pub fn from(
-        config: ShenYuConfig,
-        app_name: &str,
-        uri_infos: &[UriInfo],
-        port: u16,
-    ) -> Result<Self, String> {
-        Self::new(config, app_name, uri_infos, port)
-    }
-}
-
+#[allow(missing_docs)]
 #[cfg(feature = "actix-web")]
 pub mod actix_web_impl {
     use super::model::UriInfo;
@@ -226,6 +283,7 @@ pub mod actix_web_impl {
     }
 
     impl ShenYuRouter {
+        #[must_use]
         pub fn new(app_name: &str) -> Self {
             Self {
                 app_name: app_name.to_string(),
@@ -253,15 +311,15 @@ pub mod actix_web_impl {
         }
     }
 
-    /// Macro to register the ShenYu client once.
+    /// Macro to register the `ShenYu` client once.
     ///
-    /// This macro ensures that the ShenYu client is registered only once using a `OnceLock`.
+    /// This macro ensures that the `ShenYu` client is registered only once using a `OnceLock`.
     /// It initializes the client with the provided configuration, router, and port, and sets up
     /// a shutdown hook to deregister the client upon receiving a `ctrl_c` signal.
     ///
     /// # Arguments
     ///
-    /// * `$config` - The configuration for the ShenYu client.
+    /// * `$config` - The configuration for the `ShenYu` client.
     /// * `$router` - The router instance.
     /// * `$port` - The port number.
     #[macro_export]
@@ -273,7 +331,7 @@ pub mod actix_web_impl {
             static ONCE: OnceLock<()> = OnceLock::new();
             ONCE.get_or_init(|| {
                 let client = {
-                    let res = $crate::core::ShenyuClient::from(
+                    let res = $crate::core::ShenyuClient::new(
                         $config,
                         $router.app_name(),
                         $router.uri_infos(),
@@ -295,9 +353,9 @@ pub mod actix_web_impl {
         };
     }
 
-    /// Macro to define routes for the ShenYu router.
+    /// Macro to define routes for the `ShenYu` router.
     ///
-    /// This macro allows you to define routes for the ShenYu router in a concise manner.
+    /// This macro allows you to define routes for the `ShenYu` router in a concise manner.
     /// It supports both regular routes and nested routes.
     ///
     /// # Arguments
@@ -312,15 +370,13 @@ pub mod actix_web_impl {
     macro_rules! shenyu_router {
         ($router:expr, $app:expr, $($path:expr => $method:ident($handler:expr))*) => {
             $(
+                // fixme the handler method name
                 $router.route($path, stringify!($method));
                 $app = $app.service(actix_web::web::resource($path).route(actix_web::web::$method().to($handler)));
             )*
         }
     }
 }
-
-use crate::config::ShenYuConfig;
-use crate::core::ShenyuClient;
 
 #[cfg(test)]
 #[cfg(feature = "axum")]
@@ -344,8 +400,8 @@ mod tests_axum {
     #[tokio::test]
     async fn test_login() {
         let mut hashmap = HashMap::new();
-        hashmap.insert("username", "admin");
-        hashmap.insert("password", "123456");
+        _ = hashmap.insert("username", "admin");
+        _ = hashmap.insert("password", "123456");
         let params = [
             ("userName", hashmap.get("username").copied().unwrap()),
             ("password", hashmap.get("password").copied().unwrap()),
@@ -368,7 +424,7 @@ mod tests_axum {
             .route("/health", "get", get(health_handler))
             .route("/users", "post", post(create_user_handler));
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527);
+        let res = ShenyuClient::new(config, app.app_name(), app.uri_infos(), 9527);
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!(
@@ -381,18 +437,15 @@ mod tests_axum {
         );
 
         if let Ok(token) = client.get_register_token() {
-            client
+            _ = client
                 .headers
                 .insert("X-Access-Token".to_string(), token.to_string());
         } else {
             panic!("Can't get register token");
         }
-        let res = client.register_all_metadata(true);
-        assert!(res.is_ok());
-        let res = client.register_uri();
-        assert!(res.is_ok());
-        let res = client.register_discovery_config();
-        assert!(res.is_ok());
+        client.register_all_metadata(true);
+        client.register_uri();
+        client.register_discovery_config();
         client.offline_register();
     }
 
@@ -422,7 +475,7 @@ mod tests_actix_web {
     async fn build_client() {
         let app = ShenYuRouter::new("shenyu_client_app");
         let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
-        let res = ShenyuClient::from(config, app.app_name(), app.uri_infos(), 9527);
+        let res = ShenyuClient::new(config, app.app_name(), app.uri_infos(), 9527);
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
         println!(
@@ -435,18 +488,15 @@ mod tests_actix_web {
         );
 
         if let Ok(token) = client.get_register_token() {
-            client
+            _ = client
                 .headers
                 .insert("X-Access-Token".to_string(), token.to_string());
         } else {
             panic!("Can't get register token");
         }
-        let res = client.register_all_metadata(true);
-        assert!(res.is_ok());
-        let res = client.register_uri();
-        assert!(res.is_ok());
-        let res = client.register_discovery_config();
-        assert!(res.is_ok());
+        client.register_all_metadata(true);
+        client.register_uri();
+        client.register_discovery_config();
         client.offline_register();
     }
 }

@@ -32,11 +32,12 @@ readme = "README.md"
 [workspace]
 resolver = "2"
 members = [
+    "examples/*",
     "shenyu-client-rust",
-    "examples"
 ]
 
 [workspace.dependencies]
+shenyu-client-rust = { path = "shenyu-client-rust" }
 cfg-if = "1.0.0"
 serde = "1"
 serde_json = "1"

@@ -15,20 +15,19 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
 [package]
 name = "shenyu-client-rust"
-version = { workspace = true }
-edition = { workspace = true }
-homepage = { workspace = true }
-rust-version = { workspace = true }
-
-categories = { workspace = true }
-description = { workspace = true }
-repository = { workspace = true }
-license = { workspace = true }
-keywords = ["shenyu"]
-readme = "../README.md"
+version.workspace = true
+edition.workspace = true
+homepage.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+categories.workspace = true
+description.workspace = true
+repository.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme.workspace = true
 
 [features]
 default = []
@@ -60,5 +59,14 @@ tonic-reflection = { version = "0.12.1" }
 quote = "1.0.36"
 tracing = "0.1.40"
 
-[dev-dependencies]
-mockall = "0.10.2"
+# CI need.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = [
+    "Win32_Foundation",
+    "Win32_System_Kernel",
+    "Win32_System_Threading",
+    "Win32_System_SystemInformation",
+    "Win32_System_Diagnostics_Debug",
+] }
