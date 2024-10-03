@@ -15,14 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#![cfg(feature = "actix-web")]
 use actix_web::{middleware, App, HttpServer, Responder};
 use shenyu_client_rust::actix_web_impl::ShenYuRouter;
+use shenyu_client_rust::ci::_CI_CTRL_C;
 use shenyu_client_rust::config::ShenYuConfig;
 use shenyu_client_rust::{register_once, shenyu_router};
-
-mod ci;
-use crate::ci::_CI_CTRL_C;
 
 async fn health_handler() -> impl Responder {
     "OK"
@@ -46,7 +43,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let mut router = ShenYuRouter::new("shenyu_client_app");
         let mut app = App::new().wrap(middleware::Logger::default());
-        let config = ShenYuConfig::from_yaml_file("examples/config.yml").unwrap();
+        let config = ShenYuConfig::from_yaml_file("config.yml").unwrap();
+        // fixme the handler method name, should be `actix-web-example::health_handler`
         shenyu_router!(
             router,
             app,

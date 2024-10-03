@@ -21,5 +21,7 @@ export RUST_BACKTRACE=1
 "${CARGO}" test --target "${TARGET}" --all-features
 "${CARGO}" test --target "${TARGET}" --all-features --release
 
-"${CARGO}" run --package examples --all-features --bin axum_example || true
-"${CARGO}" run --package examples --all-features --bin actix_web_example || true
+cd "${PROJECT_DIR}"/examples/axum-example
+"${CARGO}" run || true
+cd "${PROJECT_DIR}"/examples/actix-web-example
+"${CARGO}" run || true

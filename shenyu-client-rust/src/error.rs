@@ -17,15 +17,20 @@
 
 use std::io::Error;
 
+/// Shenyu Error.
 #[derive(Debug)]
 pub struct ShenYuError {
+    /// The error code.
     pub code: i32,
+    /// The error message.
     pub message: String,
 }
 
 impl ShenYuError {
+    /// Create a new `ShenYuError`.
+    #[must_use]
     pub fn new(code: i32, message: String) -> Self {
-        ShenYuError { code, message }
+        Self { code, message }
     }
 }
 
