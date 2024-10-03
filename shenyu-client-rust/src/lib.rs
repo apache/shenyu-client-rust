@@ -400,8 +400,8 @@ mod tests_axum {
     #[tokio::test]
     async fn test_login() {
         let mut hashmap = HashMap::new();
-        hashmap.insert("username", "admin");
-        hashmap.insert("password", "123456");
+        _ = hashmap.insert("username", "admin");
+        _ = hashmap.insert("password", "123456");
         let params = [
             ("userName", hashmap.get("username").copied().unwrap()),
             ("password", hashmap.get("password").copied().unwrap()),
@@ -437,7 +437,7 @@ mod tests_axum {
         );
 
         if let Ok(token) = client.get_register_token() {
-            client
+            _ = client
                 .headers
                 .insert("X-Access-Token".to_string(), token.to_string());
         } else {
@@ -488,7 +488,7 @@ mod tests_actix_web {
         );
 
         if let Ok(token) = client.get_register_token() {
-            client
+            _ = client
                 .headers
                 .insert("X-Access-Token".to_string(), token.to_string());
         } else {
