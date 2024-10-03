@@ -144,6 +144,7 @@ impl ShenyuClient {
             .map(|url| format!("{url}{REGISTER_OFFLINE_SUFFIX}"))
             .collect();
 
+        #[allow(unused_assignments)]
         let mut host = None;
         #[cfg(not(target_os = "macos"))]
         {
