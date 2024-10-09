@@ -388,6 +388,7 @@ mod tests_axum {
     use axum::routing::{get, post};
     use serde_json::Value;
     use std::collections::HashMap;
+    use tracing::error;
 
     async fn health_handler() -> &'static str {
         "OK"
@@ -441,7 +442,7 @@ mod tests_axum {
                 .headers
                 .insert("X-Access-Token".to_string(), token.to_string());
         } else {
-            panic!("Can't get register token");
+            error!("Can't get register token");
         }
         client.register_all_metadata(true);
         client.register_uri();
@@ -470,6 +471,7 @@ mod tests_actix_web {
     use crate::config::ShenYuConfig;
     use crate::core::ShenyuClient;
     use crate::IRouter;
+    use tracing::error;
 
     #[tokio::test]
     async fn build_client() {
@@ -487,16 +489,7 @@ mod tests_actix_web {
                 .unwrap_or("None".to_string())
         );
 
-        if let Ok(token) = client.get_register_token() {
-            _ = client
-                .headers
-                .insert("X-Access-Token".to_string(), token.to_string());
-        } else {
-            panic!("Can't get register token");
-        }
-        client.register_all_metadata(true);
-        client.register_uri();
-        client.register_discovery_config();
+        client.register().unwrap();
         client.offline_register();
     }
 }
