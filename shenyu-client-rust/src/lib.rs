@@ -471,7 +471,6 @@ mod tests_actix_web {
     use crate::config::ShenYuConfig;
     use crate::core::ShenyuClient;
     use crate::IRouter;
-    use tracing::error;
 
     #[tokio::test]
     async fn build_client() {
