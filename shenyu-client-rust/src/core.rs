@@ -62,11 +62,15 @@ impl ShenyuClient {
     /// Register to shenyu admin.
     pub fn register(&self) -> Result<(), Error> {
         if let Ok(token) = self.get_register_token() {
+            info!(
+                "[SUCCESS], get register token success, register token: {:#?}",
+                &token
+            );
             _ = self
                 .headers
                 .insert("X-Access-Token".to_string(), token.to_string());
         } else {
-            return Err(Error::new(ErrorKind::Other, "Can't get register token"));
+            error!("Can't get register token");
         }
         self.register_all_metadata(true);
         self.register_uri();
@@ -316,7 +320,7 @@ impl ShenyuClient {
             if let Ok(true) = self.request(url, &json_data) {
                 info!(
                     "[SUCCESS], register metadata success, register data: {:#?}",
-                    json_data
+                    &json_data
                 );
                 continue;
             }
@@ -355,7 +359,7 @@ impl ShenyuClient {
             if let Ok(true) = self.request(url, &json_data) {
                 info!(
                     "[SUCCESS], register discover config success, register data: {:#?}",
-                    json_data
+                    &json_data
                 );
                 continue;
             }
@@ -389,7 +393,7 @@ impl ShenyuClient {
             if let Ok(true) = self.request(url, &json_data) {
                 info!(
                     "[SUCCESS], offline success, register data: {:#?}",
-                    json_data
+                    &json_data
                 );
                 continue;
             }
