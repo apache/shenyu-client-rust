@@ -388,7 +388,6 @@ mod tests_axum {
     use axum::routing::{get, post};
     use serde_json::Value;
     use std::collections::HashMap;
-    use tracing::error;
 
     async fn health_handler() -> &'static str {
         "OK"
@@ -428,25 +427,8 @@ mod tests_axum {
         let res = ShenyuClient::new(config, app.app_name(), app.uri_infos(), 9527);
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
-        println!(
-            "shenyu-client-rust.token: {:?}",
-            client
-                .headers
-                .get("X-Access-Token")
-                .map(|r| r.clone())
-                .unwrap_or("None".to_string())
-        );
 
-        if let Ok(token) = client.get_register_token() {
-            _ = client
-                .headers
-                .insert("X-Access-Token".to_string(), token.to_string());
-        } else {
-            error!("Can't get register token");
-        }
-        client.register_all_metadata(true);
-        client.register_uri();
-        client.register_discovery_config();
+        client.register().unwrap();
         client.offline_register();
     }
 
@@ -479,14 +461,6 @@ mod tests_actix_web {
         let res = ShenyuClient::new(config, app.app_name(), app.uri_infos(), 9527);
         assert!(&res.is_ok());
         let client = &mut res.unwrap();
-        println!(
-            "shenyu-client-rust.token: {:?}",
-            client
-                .headers
-                .get("X-Access-Token")
-                .map(|r| r.clone())
-                .unwrap_or("None".to_string())
-        );
 
         client.register().unwrap();
         client.offline_register();
