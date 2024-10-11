@@ -40,6 +40,9 @@ pub const REGISTER_OFFLINE_SUFFIX: &str = "/shenyu-client/offline";
 /// Shenyu admin http interface path.
 pub const PLATFORM_LOGIN_SUFFIX: &str = "/platform/login";
 
+/// Shenyu admin default namespace id.
+pub const SYS_DEFAULT_NAMESPACE_ID: &str = "649330b6-c2d7-4edc-be8e-8a54df9eb385";
+
 /// The shenyu client.
 #[derive(Debug)]
 #[warn(dead_code)]
@@ -49,6 +52,7 @@ pub struct ShenyuClient {
     env: ShenYuConfig,
     host: Option<String>,
     port: u16,
+    namespace_id: String,
     gateway_base_urls: Vec<String>,
     register_meta_data_path_list: Vec<String>,
     register_uri_list: Vec<String>,
@@ -90,12 +94,19 @@ impl ShenyuClient {
             "Content-Type".to_string(),
             "application/json;charset=UTF-8".to_string(),
         );
+        let namespace_id = config
+            .register
+            .namespace_id
+            .clone()
+            .unwrap_or(SYS_DEFAULT_NAMESPACE_ID.to_string());
+
         let mut client = ShenyuClient {
             headers,
             app_name: app_name.to_string(),
             env: config,
             host: None,
             port,
+            namespace_id,
             gateway_base_urls: vec![],
             register_meta_data_path_list: vec![],
             register_uri_list: vec![],
@@ -234,6 +245,7 @@ impl ShenyuClient {
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
+        let namespace_id = &self.namespace_id.clone();
 
         let port = &self.port;
         let host = &self.host;
@@ -245,6 +257,7 @@ impl ShenyuClient {
             "rpcType": rpc_type,
             "host": host.clone().unwrap(),
             "port": port,
+            "namespaceId": namespace_id,
             "eventType": EventType::REGISTER.to_string(),
         });
 
@@ -290,6 +303,7 @@ impl ShenyuClient {
     ) {
         let context_path = &self.env.uri.context_path.clone();
         let app_name = &self.app_name.clone();
+        let namespace_id = &self.namespace_id.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let path = if register_all {
             format!("{context_path}**")
@@ -311,6 +325,7 @@ impl ShenyuClient {
             "rpcExt": "",
             "host": self.host.clone().unwrap(),
             "port": self.port,
+            "namespaceId": namespace_id,
             "enabled": enabled,
             "registerMetaData": "",
             "pluginNames": []
@@ -373,6 +388,7 @@ impl ShenyuClient {
     /// Offline from shenyu.
     pub fn offline_register(&self) {
         let app_name = &self.app_name.clone();
+        let namespace_id = &self.namespace_id.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
 
@@ -385,6 +401,7 @@ impl ShenyuClient {
             "protocol": rpc_type,
             "host": host.clone().unwrap(),
             "port": port,
+            "namespaceId": namespace_id,
             "eventType": EventType::REGISTER.to_string(),
         });
 

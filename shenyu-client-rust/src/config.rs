@@ -53,6 +53,7 @@ impl ShenYuConfig {
 pub struct RegisterConfig {
     pub register_type: String,
     pub servers: String,
+    pub namespace_id: Option<String>,
     pub props: HashMap<String, String>,
 }
 
