@@ -402,7 +402,7 @@ impl ShenyuClient {
             "host": host.clone().unwrap(),
             "port": port,
             "namespaceId": namespace_id,
-            "eventType": EventType::REGISTER.to_string(),
+            "eventType": EventType::OFFLINE.to_string(),
         });
 
         // Broadcast offline to all shenyu admin.
