@@ -52,7 +52,7 @@ pub struct ShenyuClient {
     env: ShenYuConfig,
     host: Option<String>,
     port: u16,
-    namespace_id: String,
+    namespace_ids: Vec<String>,
     gateway_base_urls: Vec<String>,
     register_meta_data_path_list: Vec<String>,
     register_uri_list: Vec<String>,
@@ -94,11 +94,10 @@ impl ShenyuClient {
             "Content-Type".to_string(),
             "application/json;charset=UTF-8".to_string(),
         );
-        let namespace_id = config
-            .register
-            .namespace_id
-            .clone()
-            .unwrap_or(SYS_DEFAULT_NAMESPACE_ID.to_string());
+        let namespace_ids: Vec<String> = config.register.namespace_id.clone().map_or(
+            vec![SYS_DEFAULT_NAMESPACE_ID.to_string()],
+            |x| -> Vec<String> { x.split(';').map(ToString::to_string).collect() },
+        );
 
         let mut client = ShenyuClient {
             headers,
@@ -106,7 +105,7 @@ impl ShenyuClient {
             env: config,
             host: None,
             port,
-            namespace_id,
+            namespace_ids,
             gateway_base_urls: vec![],
             register_meta_data_path_list: vec![],
             register_uri_list: vec![],
@@ -245,8 +244,19 @@ impl ShenyuClient {
         let app_name = &self.app_name.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
-        let namespace_id = &self.namespace_id.clone();
+        let namespace_ids = &self.namespace_ids.clone();
+        namespace_ids.iter().for_each(|namespace_id| {
+            self._register_uri(app_name, rpc_type, context_path, namespace_id);
+        });
+    }
 
+    fn _register_uri(
+        &self,
+        app_name: &str,
+        rpc_type: &str,
+        context_path: &str,
+        namespace_id: &str,
+    ) {
         let port = &self.port;
         let host = &self.host;
 
@@ -303,7 +313,7 @@ impl ShenyuClient {
     ) {
         let context_path = &self.env.uri.context_path.clone();
         let app_name = &self.app_name.clone();
-        let namespace_id = &self.namespace_id.clone();
+        let namespace_ids = &self.namespace_ids.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let path = if register_all {
             format!("{context_path}**")
@@ -312,14 +322,39 @@ impl ShenyuClient {
         };
 
         let rule_name = rule_name.unwrap_or(&path).to_string();
+        namespace_ids.iter().for_each(|namespace_id| {
+            self._register_metadata(
+                app_name,
+                rpc_type,
+                context_path.to_string(),
+                path.as_str(),
+                method,
+                rule_name.clone(),
+                namespace_id,
+                enabled,
+            );
+        });
+    }
+
+    fn _register_metadata(
+        &self,
+        app_name: &str,
+        rpc_type: &str,
+        context_path: String,
+        path: &str,
+        method: Option<&str>,
+        rule_name: String,
+        namespace_id: &str,
+        enabled: bool,
+    ) {
         let json_data = serde_json::json!({
-            "appName": app_name.clone(),
+            "appName": app_name,
             "contextPath": context_path.clone(),
-            "path": context_path.clone() + path.as_str(),
+            "path": context_path.clone() + path,
             "pathDesc": "",
             "rpcType": rpc_type,
             "ruleName": context_path.clone() + rule_name.as_str(),
-            "serviceName": app_name.clone(),
+            "serviceName": app_name,
             "methodName": method.unwrap_or("").to_string(),
             "parameterTypes": "",
             "rpcExt": "",
@@ -388,13 +423,25 @@ impl ShenyuClient {
     /// Offline from shenyu.
     pub fn offline_register(&self) {
         let app_name = &self.app_name.clone();
-        let namespace_id = &self.namespace_id.clone();
+        let namespace_ids = &self.namespace_ids.clone();
         let rpc_type = &self.env.uri.rpc_type.clone();
         let context_path = &self.env.uri.context_path.clone();
 
         let port = &self.port;
         let host = &self.host;
-
+        namespace_ids.iter().for_each(|namespace_id| {
+            self._offline_register(app_name, rpc_type, context_path, namespace_id, port, host);
+        });
+    }
+    fn _offline_register(
+        &self,
+        app_name: &str,
+        rpc_type: &str,
+        context_path: &str,
+        namespace_id: &str,
+        port: &u16,
+        host: &Option<String>,
+    ) {
         let json_data = serde_json::json!({
             "appName": app_name,
             "contextPath": context_path,
