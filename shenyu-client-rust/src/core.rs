@@ -432,7 +432,7 @@ impl ShenyuClient {
             "listenerNode":register_path,
             "serverList": server_lists,
             "props": props,
-            "discoveryType": discovery_type.clone(),
+            "discoveryType": discovery_type,
             "pluginName": plugin_name,
             "namespaceId": namespace_id,
         });
