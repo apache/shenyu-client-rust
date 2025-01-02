@@ -94,10 +94,14 @@ impl ShenyuClient {
             "Content-Type".to_string(),
             "application/json;charset=UTF-8".to_string(),
         );
-        let namespace_ids: Vec<String> = config.register.namespace_id.clone().map_or(
-            vec![SYS_DEFAULT_NAMESPACE_ID.to_string()],
-            |x| -> Vec<String> { x.split(';').map(ToString::to_string).collect() },
-        );
+        let namespace_ids: Vec<String> = config
+            .register
+            .namespace_id
+            .clone()
+            .filter(|x| !x.is_empty())
+            .map_or(vec![SYS_DEFAULT_NAMESPACE_ID.to_string()], |x| {
+                x.split(';').map(ToString::to_string).collect()
+            });
 
         let mut client = ShenyuClient {
             headers,
