@@ -2,7 +2,7 @@ shenyu:
   register:
     register_type: "http"
     servers: "http://127.0.0.1:9095"
-    namespace_id: "testNamespaceId"
+    namespace_id: ""
     props:
       username: "admin"
       password: "123456"
