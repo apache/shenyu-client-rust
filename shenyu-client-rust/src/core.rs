@@ -20,6 +20,7 @@ use crate::error::ShenYuError;
 use crate::model::{EventType, UriInfo};
 use dashmap::DashMap;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::io::{Error, ErrorKind};
 use std::net::IpAddr;
 use tracing::{error, info, warn};
@@ -393,10 +394,37 @@ impl ShenyuClient {
         let props = &self.env.discovery.props.clone();
         let plugin_name = &self.env.discovery.plugin_name.clone();
         let context_path = &self.env.uri.context_path.clone();
+        let namespace_ids = &self.namespace_ids.clone();
 
         let port = &self.port;
         let host = &self.host;
+        namespace_ids.iter().for_each(|namespace_id| {
+            self._register_discovery_config(
+                discovery_type,
+                register_path,
+                server_lists,
+                props,
+                plugin_name,
+                context_path,
+                namespace_id,
+                host,
+                port,
+            );
+        });
+    }
 
+    fn _register_discovery_config(
+        &self,
+        discovery_type: &str,
+        register_path: &str,
+        server_lists: &str,
+        props: &HashMap<String, String>,
+        plugin_name: &str,
+        context_path: &str,
+        namespace_id: &str,
+        host: &Option<String>,
+        port: &u16,
+    ) {
         let json_data = serde_json::json!({
             "name": "default".to_string() + discovery_type,
             "selectorName": context_path,
@@ -406,6 +434,7 @@ impl ShenyuClient {
             "props": props,
             "discoveryType": discovery_type.clone(),
             "pluginName": plugin_name,
+            "namespaceId": namespace_id,
         });
 
         // Broadcast to all shenyu admin.
