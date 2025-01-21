@@ -31,8 +31,9 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
-          override: true
+            toolchain: nightly
+            override: true
+            components: rustfmt, clippy
       - name: Update version in Cargo.toml
         run: |
           VERSION=$(echo ${{ github.ref }} | sed 's/refs\/tags\/v//')
