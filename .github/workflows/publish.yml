@@ -30,7 +30,7 @@ jobs:
 
       - name: Set up Rust
         run: |
-           rustup toolchain add --profile=minimal nightly
+           rustup toolchain add --profile=minimal --component rustfmt,clippy nightly
            rustup override set nightly
       - name: Update version in Cargo.toml
         run: |

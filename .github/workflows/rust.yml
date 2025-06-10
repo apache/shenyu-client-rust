@@ -29,8 +29,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: |
-           rustup toolchain add ${{ matrix.target == 'i686-pc-windows-gnu' && format('{0}-i686-pc-windows-gnu', matrix.channel) || matrix.channel }}
+      - name: Setup toolchain
+        env:
+          TOOLCHAIN: ${{ matrix.target == 'i686-pc-windows-gnu' && format('{0}-i686-pc-windows-gnu', matrix.channel) || matrix.channel }}
+        run: |
+           rustup toolchain add --component rustfmt --target ${{ matrix.target }} $TOOLCHAIN
 
       - run: |
           cargo fmt --all -- --check
