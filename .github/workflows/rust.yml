@@ -29,17 +29,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.target == 'i686-pc-windows-gnu' && format('{0}-i686-pc-windows-gnu', matrix.channel) || matrix.channel }}
-          target: ${{ matrix.target }}
-          override: true
-          components: rustfmt
+      - name: Setup toolchain
+        env:
+          TOOLCHAIN: ${{ matrix.target == 'i686-pc-windows-gnu' && format('{0}-i686-pc-windows-gnu', matrix.channel) || matrix.channel }}
+        run: |
+           rustup toolchain add --component rustfmt --target ${{ matrix.target }} $TOOLCHAIN
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+      - run: |
+          cargo fmt --all -- --check
 
       - uses: actions/setup-java@v4
         with:
@@ -157,7 +154,7 @@ jobs:
 #            os: ubuntu-latest
 
           - target: x86_64-apple-darwin
-            os: macos-latest
+            os: macos-13
           - target: aarch64-apple-darwin
             os: macos-14
 
