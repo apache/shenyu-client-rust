@@ -219,16 +219,15 @@ impl ShenyuClient {
 
     pub(crate) fn get_register_token(&self) -> Result<String, Error> {
         let hashmap = &self.env.register.props;
-        let params = [
-            ("userName", hashmap.get("username").unwrap().as_str()),
-            ("password", hashmap.get("password").unwrap().as_str()),
-        ];
+        let params = serde_json::json!({
+            "userName": hashmap.get("username").unwrap().as_str(),
+            "password": hashmap.get("password").unwrap().as_str(),
+        });
 
         let result = Err(ShenYuError::new(500, "Can't get register token".to_string()).into());
         for url in &self.register_token_servers {
-            let res_data: Value = ureq::get(url)
-                .query_pairs(params)
-                .call()
+            let res_data: Value = ureq::post(url)
+                .send_json(&params)
                 .or_any_status()
                 .map_err(|e| Error::new(ErrorKind::Other, format!("{e}")))?
                 .into_json()?;

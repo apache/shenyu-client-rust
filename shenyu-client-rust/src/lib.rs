@@ -402,15 +402,14 @@ mod tests_axum {
         let mut hashmap = HashMap::new();
         _ = hashmap.insert("username", "admin");
         _ = hashmap.insert("password", "123456");
-        let params = [
-            ("userName", hashmap.get("username").copied().unwrap()),
-            ("password", hashmap.get("password").copied().unwrap()),
-        ];
+        let params = serde_json::json!({
+            "userName": hashmap.get("username").copied().unwrap(),
+            "password": hashmap.get("password").copied().unwrap(),
+        });
 
         // Fix the URL to include the scheme
-        let res = ureq::get("http://127.0.0.1:9095/platform/login")
-            .query_pairs(params)
-            .call()
+        let res = ureq::post("http://127.0.0.1:9095/platform/login")
+            .send_json(&params)
             .unwrap();
         let res_data: Value = res.into_json().unwrap();
         print!("res_data: {:?}", res_data);
